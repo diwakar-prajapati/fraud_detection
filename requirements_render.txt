@@ -3,7 +3,7 @@ pandas==1.5.3
 numpy==1.23.5
 scipy==1.10.1
 
-# Machine Learning (no deep learning for faster deploy)
+# Machine Learning (CPU versions only)
 scikit-learn==1.2.2
 xgboost==1.7.6
 imbalanced-learn==0.10.1
