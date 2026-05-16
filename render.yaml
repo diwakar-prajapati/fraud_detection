@@ -1,0 +1,26 @@
+services:
+  # API Service
+  - type: web
+    name: fraud-detection-api
+    runtime: python
+    repo: https://github.com/diwakar-prajapati/fraud_detection
+    branch: main
+    plan: free
+    buildCommand: pip install -r requirements_render.txt
+    startCommand: uvicorn application.bank_api:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.9.0
+
+  # Dashboard Service
+  - type: web
+    name: fraud-detection-dashboard
+    runtime: python
+    repo: https://github.com/diwakar-prajapati/fraud_detection
+    branch: main
+    plan: free
+    buildCommand: pip install -r requirements_render.txt
+    startCommand: streamlit run application/dashboard_multi_model.py --server.port $PORT --server.headless true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.9.0
