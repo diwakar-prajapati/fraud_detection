@@ -12,6 +12,12 @@ import random
 from datetime import datetime
 import json
 
+# ========== CONFIGURATION ==========
+# Change this to your live API URL when deploying
+# For local development: "http://localhost:8000"
+# For production: "https://fraud-detection-doav.onrender.com"
+API_URL = "http://localhost:8000"  # Change this to your live URL when deploying
+
 # Page config
 st.set_page_config(
     page_title="Fraud Detection - Multi Model",
@@ -37,8 +43,6 @@ st.markdown("""
     }
 </style>
 """, unsafe_allow_html=True)
-
-API_URL = "http://localhost:8000"
 
 # Model configurations
 MODELS = {
@@ -91,6 +95,21 @@ MODELS = {
         "api_endpoint": "/predict/simple"
     }
 }
+
+
+# ========== STATIC MODEL COMPARISON DATA (CACHED - NO FLUCTUATION) ==========
+@st.cache_data(ttl=3600)  # Cache for 1 hour, prevents recalculation
+def get_model_comparison():
+    """Static model comparison data - NEVER changes during runtime"""
+    return pd.DataFrame([
+        {"Model": "XGBoost", "Accuracy": "99.96%", "Precision": "0.99", "Recall": "0.82", "F1": "0.89"},
+        {"Model": "Random Forest", "Accuracy": "99.94%", "Precision": "0.98", "Recall": "0.80", "F1": "0.88"},
+        {"Model": "Neural Network", "Accuracy": "99.94%", "Precision": "0.98", "Recall": "0.81", "F1": "0.88"},
+        {"Model": "Logistic Regression", "Accuracy": "97.23%", "Precision": "0.85", "Recall": "0.72", "F1": "0.78"},
+        {"Model": "SVM", "Accuracy": "96.89%", "Precision": "0.83", "Recall": "0.70", "F1": "0.76"},
+        {"Model": "Rule-Based", "Accuracy": "85.00%", "Precision": "0.70", "Recall": "0.65", "F1": "0.67"}
+    ])
+
 
 # Session state
 if 'transactions' not in st.session_state:
@@ -375,38 +394,34 @@ with col_mid:
 with col_right:
     st.markdown("### 📊 Model Comparison")
 
-    comparison_data = []
-    for name, info in MODELS.items():
-        comparison_data.append({
-            "Model": name,
-            "Accuracy": info["accuracy"],
-            "Precision": info["precision"],
-            "Recall": info["recall"],
-            "F1": info["f1"]
-        })
-
-    df_comp = pd.DataFrame(comparison_data)
-    st.dataframe(df_comp, use_container_width=True, hide_index=True)
+    # FIXED: Using cached static data - NO FLUCTUATION
+    df_comp = get_model_comparison()
+    st.dataframe(df_comp, use_container_width=True, hide_index=True, height=280)
 
     st.divider()
 
+    # Current model details
     current = MODELS[st.session_state.selected_model]
     st.markdown(f"**Current: {st.session_state.selected_model}**")
-    st.caption(f"🎯 Accuracy: {current['accuracy']}")
-    st.caption(f"📊 Precision: {current['precision']}")
-    st.caption(f"📈 Recall: {current['recall']}")
-    st.caption(f"⚡ F1 Score: {current['f1']}")
+
+    col_m1, col_m2 = st.columns(2)
+    with col_m1:
+        st.metric("Accuracy", current['accuracy'])
+        st.metric("Precision", current['precision'])
+    with col_m2:
+        st.metric("Recall", current['recall'])
+        st.metric("F1 Score", current['f1'])
 
     st.divider()
 
     # User Transactions History
     if st.session_state.user_transactions:
-        st.markdown("### 📋 User Transaction History")
+        st.markdown("### 📋 User History")
         user_df = pd.DataFrame(st.session_state.user_transactions).head(5)
         for _, row in user_df.iterrows():
             risk_icon = "🔴" if row['fraud_probability'] > 70 else "🟡" if row['fraud_probability'] > 40 else "🟢"
             st.caption(
-                f"{risk_icon} {row['customer_name'][:15]} | ${row['amount']:.0f} | {row['fraud_probability']:.0f}% | {row['risk_level']}")
+                f"{risk_icon} {row['customer_name'][:15]} | ${row['amount']:.0f} | {row['fraud_probability']:.0f}%")
 
     st.divider()
 
